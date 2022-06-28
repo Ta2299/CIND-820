@@ -1,0 +1,162 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#Import packages
+library(tidyverse)
+library(caret)
+library(ISLR)
+library(dplyr)
+library(Boruta)
+library(leaps)
+library(MASS)
+library(ggeffects)
+```
+
+
+```{r}
+#Read the dataset
+Rice_data <- read.csv('Rice_Commeo_Osmancik.csv', header=TRUE)
+```
+
+
+```{r}
+#View a glimpse of the data and dtypes and convert to numeric
+glimpse(Rice_data)
+Rice_data$Area = as.numeric(Rice_data$Area)
+Rice_data$Convex_Area = as.numeric(Rice_data$Convex_Area)
+```
+```{r}
+head(Rice_data)
+```
+
+```{r}
+#Plot the class variable
+ricePlot <- ggplot(Rice_data, aes(x=Class, fill = Class)) + geom_bar() + ylim(0, 2500)
+ricePlot
+```
+
+```{r}
+#Convert the class variable to binary values where Osmancik=0 and Cammeo=1
+
+Rice_data$Class <- as.factor(Rice_data$Class)
+Rice_data <- Rice_data %>% 
+  mutate(Class = recode(Class, 
+                    "Osmancik" = "0", 
+                    "Cammeo" = "1")) 
+
+str(Rice_data)  
+```
+
+```{r}
+#count for each class variable value
+Class_count <- count(Rice_data, Class)
+Class_count
+```
+
+```{r}
+#Check correlation before deciding whether to use PCA
+cor(Rice_data[,-8])
+```
+```{r}
+#The most highly correlated variables are Area with Convex_Area as well as Perimeter and Major_Axis_Length.
+#So we can check the variances between these pairs to see which should be removed.
+var(Rice_data$Area)
+var(Rice_data$Convex_Area)
+var(Rice_data$Perimeter)
+var(Rice_data$Major_Axis_Length)
+#we can remove Area and Major_Axis_Length when building our models.
+```
+
+```{r}
+#There are many highly correlated values so PCA should be performed
+pc_Rice <- princomp(Rice_data[,-8], cor = TRUE, score = TRUE)
+summary(pc_Rice)
+```
+```{r}
+#Plot the variances
+plot(pc_Rice)
+pc_Rice$loadings
+
+#The plot shows us the first three components are significant (PCA will be implemented for one of the lr models)
+```
+
+```{r}
+#Boruta feature selection
+#1. Perform a Boruta search to identify variables
+boruta_Rice <- Boruta(Class ~ ., data = Rice_data, doTrace=2)
+```
+```{r}
+#2. check the boruta output
+names(boruta_Rice)
+```
+```{r}
+#3. obtain the significant variables
+roughFixMod <- TentativeRoughFix(boruta_Rice)
+boruta_signif <- getSelectedAttributes(boruta_Rice, withTentative = FALSE)
+print(boruta_signif)
+```
+```{r}
+#4. Check the importance of the variables
+imps <- attStats(roughFixMod)
+imps2 = imps[imps$decision != 'Rejected', c('meanImp','decision')]
+imps2[order(-imps2$meanImp), ]
+```
+
+
+```{r}
+#4. Plot the importance of the variables
+plot(boruta_Rice, cex.axis=0.58, las=2, xlab="", main="Variable Importance")
+```
+```{r}
+#Get a list of the final selected variables
+finalvars <- getSelectedAttributes(boruta_Rice, withTentative = FALSE)
+finalvars
+#All variables were determined to be important for the predictive analysis
+```
+```{r}
+#Perform K-fold Cross-Validation 
+
+#1. choose the cv method
+ctrl <- trainControl(method = "cv", number = 10, savePredictions = TRUE)
+
+#2. fit the regression model and use the k-fold cv to evaluate (not including Area and Major_Axis_Length)
+lr_model <- train(Class ~ Perimeter + Minor_Axis_Length + Eccentricity + 
+                    Convex_Area + Extent, data = Rice_data, method = "glm", 
+                  family = binomial, trControl = ctrl)
+
+summary(lr_model)
+print(lr_model)
+```
+
+```{r}
+#using PCA to see if it improves the model (not including Area and Major_Axis_Length)
+
+lr_model2 <- train(Class ~ Perimeter + Minor_Axis_Length + Eccentricity + 
+                     Convex_Area + Extent, data = Rice_data, method = "glm", 
+                   preProcess=c("pca"), family = binomial, trControl = ctrl)
+summary(lr_model2)
+print(lr_model2)
+```
+```{r}
+#Use the models to make predictions and summarize the results. 
+
+summary(lr_model$pred)
+
+
+summary(lr_model2$pred)
+```
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
