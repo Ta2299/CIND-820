@@ -10,3 +10,8 @@ next steps:
 Naive bayes model, Decision tree model
 Create a confusion matrix for each model
 Evaluate the models using precision, accuracy and recall
+
+Contents: 
+Data description file which was used for the bivariate/univariate data analysis.
+Interim Report on the rice varieties and the analysis which will be done.
+
