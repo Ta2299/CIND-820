@@ -14,4 +14,5 @@ Evaluate the models using precision, accuracy and recall
 Contents: 
 Data description file which was used for the bivariate/univariate data analysis.
 Interim Report on the rice varieties and the analysis which will be done.
-
+Initial results and code contains the regression model analysis.
+There is also a csv. file of the dataset used. 
