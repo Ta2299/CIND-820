@@ -1,0 +1,84 @@
+---
+title: "Decision Tree"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#Import packages
+library(tidyverse)
+library(caret)
+library(ISLR)
+library(dplyr)
+library(ggplot2)
+
+```
+
+```{r}
+#Read the dataset
+Rice_data <- read.csv('Rice_Commeo_Osmancik.csv', header=TRUE)
+```
+
+```{r}
+#View a glimpse of the data and dtypes and convert to numeric
+glimpse(Rice_data)
+Rice_data$Area = as.numeric(Rice_data$Area)
+Rice_data$Convex_Area = as.numeric(Rice_data$Convex_Area)
+```
+
+```{r}
+head(Rice_data)
+```
+
+```{r}
+#Convert the class variable to binary values where Osmancik=0 and Cammeo=1
+
+Rice_data$Class <- as.factor(Rice_data$Class)
+Rice_data <- Rice_data %>% 
+  mutate(Class = recode(Class, 
+                    "Osmancik" = "0", 
+                    "Cammeo" = "1")) 
+
+str(Rice_data) 
+```
+
+```{r}
+#count for each class variable value
+Class_count <- count(Rice_data, Class)
+Class_count
+```
+
+```{r}
+#Remove Area and Major_Axis_Length as they are highly correlated
+New_Rice_data <- subset(Rice_data, select = c(Perimeter, Minor_Axis_Length, Eccentricity, Convex_Area, Extent, Class))
+str(New_Rice_data)
+```
+
+```{r}
+#implement k-fold cv and build the decision tree model
+set.seed(123)
+
+ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
+dt_Rice <- train(Class ~., data = New_Rice_data, method = 'rpart' , trControl = ctrl)
+dt_Rice
+```
+```{r}
+#create another decision tree model using PCA to see if it improves the model
+set.seed(123)
+
+ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
+dt_Rice2 <- train(Class ~., data = New_Rice_data, method = 'rpart' , trControl = ctrl, preProcess=c("pca"))
+dt_Rice2
+```
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
