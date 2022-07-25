@@ -36,3 +36,5 @@ Decision Tree file contains all the rpart analysis and code.
 Naive bayes file has all naive bayes analysis and code.
 Feature selection and logistic regression file has the feature selection (boruta) and LR analysis and code.
 
+Final Report contains all the analysis and conclusions drawn.
+
