@@ -48,7 +48,7 @@ plot(class_count, ylim=c(0,2750), lwd = 4, main = 'Class')
 ```
 
 ```{r}
-Attributes <- cor(as.matrix(Rice_data[, c('Minor_Axis_Length', 'Eccentricity', 'Convex_Area', 'Extent')]))
+Attributes <- cor(as.matrix(Rice_data[, c('Perimeter', 'Minor_Axis_Length', 'Eccentricity', 'Convex_Area', 'Extent')]))
 corrplot(Attributes, type = 'upper', method = 'number', order = 'hclust',
          tl.col = 'black', tl.srt = 50)
 ```
@@ -66,38 +66,44 @@ var(Rice_data$Major_Axis_Length)
 ```
 
 ```{r}
-pairs(Rice_data[, c('Minor_Axis_Length', 'Eccentricity', 'Convex_Area', 'Extent')])
+pairs(Rice_data[, c('Perimeter', 'Minor_Axis_Length', 'Eccentricity', 'Convex_Area', 'Extent')])
 ```
 ```{r}
 plot2 <- ggplot(Rice_data, 
        aes(y = Class, 
            x = Minor_Axis_Length)) +
-  geom_point(aes(colour = Class)) + 
-  labs(title = "Minor Axis Length by Class")
+  geom_point(aes(colour = Class),show.legend = FALSE) + 
+  labs(title = "Minor Ax. Len. by Class")
 
 plot3 <- ggplot(Rice_data, 
        aes(y = Class, 
            x = Eccentricity)) +
-  geom_point(aes(colour = Class)) + 
+  geom_point(aes(colour = Class),show.legend = FALSE) + 
   labs(title = "Eccentricity by Class")
 
 plot4 <- ggplot(Rice_data, 
        aes(y = Class, 
            x = Convex_Area)) +
-  geom_point(aes(colour = Class)) + 
+  geom_point(aes(colour = Class),show.legend = FALSE) + 
   labs(title = "Convex Area by Class")
 
 plot5 <- ggplot(Rice_data, 
        aes(y = Class, 
            x = Extent)) +
-  geom_point(aes(colour = Class)) + 
+  geom_point(aes(colour = Class),show.legend = FALSE) + 
   labs(title = "Extent by Class")
 
+plot6 <- ggplot(Rice_data, 
+       aes(y = Class, 
+           x = Perimeter)) +
+  geom_point(aes(colour = Class),show.legend = FALSE) + 
+  labs(title = "Perimeter")
 ```
 
 ```{r}
-grid.arrange(plot2, plot3, plot4, plot5, ncol=2)
+grid.arrange(plot2, plot3, plot4, plot5, plot6, ncol=2, nrow = 3)
 ```
+
 
 
 
