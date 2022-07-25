@@ -1,6 +1,8 @@
 ---
 title: "Decision Tree"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -11,6 +13,8 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 #Import packages
 library(tidyverse)
 library(caret)
+library(party)
+library(rattle)
 library(ISLR)
 library(dplyr)
 library(ggplot2)
@@ -61,8 +65,11 @@ str(New_Rice_data)
 #implement k-fold cv and build the decision tree model
 set.seed(123)
 
+x = New_Rice_data[1:5]
+y = New_Rice_data$Class
+
 ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-dt_Rice <- train(Class ~., data = New_Rice_data, method = 'rpart' , trControl = ctrl)
+dt_Rice <- train(x,y, trControl = ctrl, method = 'rpart')
 dt_Rice
 ```
 ```{r}
@@ -70,9 +77,53 @@ dt_Rice
 set.seed(123)
 
 ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-dt_Rice2 <- train(Class ~., data = New_Rice_data, method = 'rpart' , trControl = ctrl, preProcess=c("pca"))
+dt_Rice2 <- train(x,y, method = 'rpart' , trControl = ctrl, preProcess=c("pca"))
 dt_Rice2
 ```
+
+
+```{r}
+dt_Rice$pred
+```
+
+
+```{r}
+fancyRpartPlot(dt_Rice$finalModel)
+```
+
+```{r}
+dt_CM <- confusionMatrix(dt_Rice)
+dt_CM
+```
+
+```{r}
+Sensitivity <- 38.9/(38.9+3.9)
+Sensitivity
+Specificity <- 53/(4.3+53)
+Specificity
+Prevalence <- (38.9+3.9)/(38.9+4.3+3.9+53)
+Prevalence
+PPV <- (Sensitivity*Prevalence)/((Sensitivity*Prevalence)+((1-Specificity)*(1-Prevalence)))
+PPV
+NPV <- (Sensitivity*(1-Prevalence))/(((1-Sensitivity)*Prevalence)+((Specificity)*(1-Prevalence)))
+NPV
+```
+
+```{r}
+dt_predictions <- predict(dt_Rice, New_Rice_data)
+confusionMatrix(dt_predictions, New_Rice_data$Class)
+```
+
+
+```{r}
+varImp(dt_Rice)
+```
+
+```{r}
+ggplot(varImp(dt_Rice))
+```
+
+
 
 
 

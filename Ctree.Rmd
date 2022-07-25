@@ -1,5 +1,5 @@
 ---
-title: "Naive Bayes"
+title: "R Notebook"
 output:
   html_document:
     df_print: paged
@@ -13,10 +13,13 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 #Import packages
 library(tidyverse)
 library(caret)
+library(party)
+library(partykit)
+library(rattle)
 library(ISLR)
 library(dplyr)
 library(ggplot2)
-library(naivebayes)
+
 ```
 
 ```{r}
@@ -30,6 +33,7 @@ glimpse(Rice_data)
 Rice_data$Area = as.numeric(Rice_data$Area)
 Rice_data$Convex_Area = as.numeric(Rice_data$Convex_Area)
 ```
+
 ```{r}
 head(Rice_data)
 ```
@@ -43,8 +47,9 @@ Rice_data <- Rice_data %>%
                     "Osmancik" = "0", 
                     "Cammeo" = "1")) 
 
-str(Rice_data)  
+str(Rice_data) 
 ```
+
 ```{r}
 #count for each class variable value
 Class_count <- count(Rice_data, Class)
@@ -56,79 +61,60 @@ Class_count
 New_Rice_data <- subset(Rice_data, select = c(Perimeter, Minor_Axis_Length, Eccentricity, Convex_Area, Extent, Class))
 str(New_Rice_data)
 ```
+```{r}
+rice_ctree <- ctree(Class ~., data = New_Rice_data)
+```
 
 ```{r}
-#define a min-max normalization function 
-min_max_norm <- function(x) {
-  (x - min(x)) / (max(x) - min(x))
-}
-#apply the function to the numeric variables above
-Rice_norm <- as.data.frame(lapply(New_Rice_data[1:5], min_max_norm))
-Rice_norm$Class <- New_Rice_data$Class
+print(rice_ctree)
 ```
 
 
+
 ```{r}
-#implement k-fold cv and build the naive bayes model
+#implement k-fold cv and build the decision tree model using ctree
 set.seed(123)
 
-x = Rice_norm[1:5]
-y = Rice_norm$Class
+x = New_Rice_data[1:5]
+y = New_Rice_data$Class
 
 ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-nb_Rice <- train(x, y, method = 'naive_bayes', trControl = ctrl, tuneLength = 0)
-nb_Rice
+ctree_Rice <- train(x,y, trControl = ctrl, method = 'ctree')
+ctree_Rice
 ```
 
-
 ```{r}
-#build a second nb model but this time use PCA for preprocessing 
+#create another ctree model using PCA to see if it improves the model
 set.seed(123)
 
-nb_Rice2 <- train(Class ~., data = Rice_norm, method = 'naive_bayes', trControl = ctrl, preProcess=c("pca"), tuneLength = 0)
-nb_Rice2
+ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
+ctree_Rice2 <- train(x,y, method = 'ctree' , trControl = ctrl, preProcess=c("pca"))
+ctree_Rice2
 ```
 ```{r}
-#Check the accuracies of each fold
-pred <- nb_Rice$pred
-pred$equal <- ifelse(pred$pred == pred$obs, 1,0)
-
-eachfold <- pred %>%
-  group_by(Resample) %>%
-  summarise_at(vars(equal),
-               list(Accuracy = mean))
-eachfold
+set.seed(123)
+ctree_Rice$pred
+```
+```{r}
+varImp(ctree_Rice)
+ggplot(varImp(ctree_Rice))
 ```
 
 ```{r}
-#plot the accuracy of each fold 
-ggplot(data=eachfold, aes(x=Resample, y=Accuracy, group=1)) +
-geom_boxplot(color="maroon") +
-geom_point() +
-theme_minimal()
-```
-
-
-```{r}
-summary(pred)
-```
-```{r}
-predict(nb_Rice$finalModel, x)
-```
-```{r}
-#build the confusion matrix
-confusionMatrix(table(predict(nb_Rice$finalModel,x),y))
-```
-```{r}
-confusionMatrix(nb_Rice)
+png("rice_ctree.png", res = 300, height=14, width=28, units = "in")
+plot(as.simpleparty(rice_ctree))
 ```
 
 ```{r}
-Sensitivity <- 38.1/(38.1+4.7)
+confusionMatrix(ctree_Rice)
+```
+
+```{r}
+Sensitivity <- 38.6/(38.6+4.1)
 Sensitivity
-Specificity <- 53.6/(3.6+53.6)
+Specificity <- 53.4/(3.9+53.4)
 Specificity
-Prevalence <- (38.1+4.7)/(38.1+3.6+4.7+53.6)
+Prevalence <- (38.6+4.1)/(38.6+3.9+4.1+53.4)
 Prevalence
 PPV <- (Sensitivity*Prevalence)/((Sensitivity*Prevalence)+((1-Specificity)*(1-Prevalence)))
 PPV
@@ -137,11 +123,10 @@ NPV
 ```
 
 ```{r}
-varImp(nb_Rice)
+ct_predictions <- predict(ctree_Rice, New_Rice_data)
+confusionMatrix(ct_predictions, New_Rice_data$Class)
 ```
-```{r}
-ggplot(varImp(nb_Rice))
-```
+
 
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
