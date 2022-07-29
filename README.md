@@ -30,7 +30,7 @@ Data description file which was used for the bivariate/univariate data analysis.
 Interim Report on the rice varieties and the analysis which will be done.
 Initial results and code contains the regression model analysis.
 There is also a csv. file of the dataset used. 
-ctree_rice.jpg is an image of the ctree decision tree.
+ctree1.png is an image of the ctree decision tree.
 Ctree file for all the ctree analysis and code.
 Decision Tree file contains all the rpart analysis and code.
 Naive bayes file has all naive bayes analysis and code.
