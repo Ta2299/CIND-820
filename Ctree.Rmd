@@ -62,69 +62,122 @@ New_Rice_data <- subset(Rice_data, select = c(Perimeter, Minor_Axis_Length, Ecce
 str(New_Rice_data)
 ```
 ```{r}
-rice_ctree <- ctree(Class ~., data = New_Rice_data)
+#cross validation
+set.seed(2)
+fold <- createFolds(New_Rice_data$Class, k = 10)
+for (f in fold) {
+  train <- New_Rice_data[-f,]
+  test <- New_Rice_data[f,]
+}
 ```
+
+
+```{r}
+rice_ctree <- ctree(Class ~., data = train)
+```
+
+
+```{r}
+set.seed(2)
+rice_ctree_prediction <- predict(rice_ctree, test) 
+# gives the probability for each class
+head(rice_ctree_prediction)
+```
+
+
+```{r}
+table(rice_ctree_prediction, test$Class)
+```
+
+```{r}
+confusionMatrix(rice_ctree_prediction, test$Class)
+```
+
 
 ```{r}
 print(rice_ctree)
 ```
 
+```{r}
+#create another decision tree model using PCA to see if it improves the model
+set.seed(2)
+
+pca <- prcomp(train[, 1:5], scale. = T, center = T)
+
+test.zspace <- predict(pca, newdata = test[, 1:5])
+pca.train.df <- as.data.frame(pca$x)
+pca.train.df$Class <- train[,6]
+
+ctree.pca.model <- ctree(Class ~., data = pca.train.df)
+
+pca.test.df <- as.data.frame(test.zspace)
+pca.test.df$Class <- test[, 6]
+ctree.pca.pred <- predict(ctree.pca.model, pca.test.df[, 1:5])
+
+confusionMatrix(ctree.pca.pred, test[, 6])
+```
+```{r}
+png("ctree1.png", res=120, height=1300, width=3500) 
+plot(ctree.pca.model, gp = gpar(fontsize = 6.5), inner_panel=node_inner, type = 'simple') 
+
+
+```
 
 
 ```{r}
 #implement k-fold cv and build the decision tree model using ctree
-set.seed(123)
+#set.seed(123)
 
-x = New_Rice_data[1:5]
-y = New_Rice_data$Class
+#x = New_Rice_data[1:5]
+#y = New_Rice_data$Class
 
-ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-ctree_Rice <- train(x,y, trControl = ctrl, method = 'ctree')
-ctree_Rice
+#ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
+#ctree_Rice <- train(x,y, data = train, method = 'ctree')
+#ctree_Rice
 ```
 
 ```{r}
 #create another ctree model using PCA to see if it improves the model
-set.seed(123)
+#set.seed(123)
 
-ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-ctree_Rice2 <- train(x,y, method = 'ctree' , trControl = ctrl, preProcess=c("pca"))
-ctree_Rice2
+#ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
+#ctree_Rice2 <- train(x,y, method = 'ctree' , trControl = ctrl, preProcess=c("pca"))
+#ctree_Rice2
 ```
 ```{r}
-set.seed(123)
-ctree_Rice$pred
+#set.seed(123)
+#ctree_Rice$pred
 ```
 ```{r}
-varImp(ctree_Rice)
-ggplot(varImp(ctree_Rice))
-```
-
-```{r}
-png("rice_ctree.png", res = 300, height=14, width=28, units = "in")
-plot(as.simpleparty(rice_ctree))
+#varImp(ctree_Rice)
+#ggplot(varImp(ctree_Rice))
 ```
 
 ```{r}
-confusionMatrix(ctree_Rice)
+#png("rice_ctree.png", res = 300, height=14, width=28, units = "in")
+#plot(as.simpleparty(rice_ctree))
 ```
 
 ```{r}
-Sensitivity <- 38.6/(38.6+4.1)
-Sensitivity
-Specificity <- 53.4/(3.9+53.4)
-Specificity
-Prevalence <- (38.6+4.1)/(38.6+3.9+4.1+53.4)
-Prevalence
-PPV <- (Sensitivity*Prevalence)/((Sensitivity*Prevalence)+((1-Specificity)*(1-Prevalence)))
-PPV
-NPV <- (Sensitivity*(1-Prevalence))/(((1-Sensitivity)*Prevalence)+((Specificity)*(1-Prevalence)))
-NPV
+#confusionMatrix(ctree_Rice)
 ```
 
 ```{r}
-ct_predictions <- predict(ctree_Rice, New_Rice_data)
-confusionMatrix(ct_predictions, New_Rice_data$Class)
+#Sensitivity <- 38.6/(38.6+4.1)
+#Sensitivity
+#Specificity <- 53.4/(3.9+53.4)
+#Specificity
+#Prevalence <- (38.6+4.1)/(38.6+3.9+4.1+53.4)
+#Prevalence
+#PPV <- (Sensitivity*Prevalence)/((Sensitivity*Prevalence)+((1-Specificity)*(1-Prevalence)))
+#PPV
+#NPV <- (Sensitivity*(1-Prevalence))/(((1-Sensitivity)*Prevalence)+((Specificity)*(1-Prevalence)))
+#NPV
+```
+
+```{r}
+#ct_predictions <- predict(ctree_Rice, New_Rice_data)
+#confusionMatrix(ct_predictions, New_Rice_data$Class)
 ```
 
 

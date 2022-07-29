@@ -3,6 +3,7 @@ title: "Decision Tree"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -18,7 +19,7 @@ library(rattle)
 library(ISLR)
 library(dplyr)
 library(ggplot2)
-
+library(rpart)
 ```
 
 ```{r}
@@ -63,64 +64,87 @@ str(New_Rice_data)
 
 ```{r}
 #implement k-fold cv and build the decision tree model
-set.seed(123)
+set.seed(2)
 
-x = New_Rice_data[1:5]
-y = New_Rice_data$Class
+fold <- createFolds(New_Rice_data$Class, k = 10)
+for (f in fold) {
+  train <- New_Rice_data[-f,]
+  test <- New_Rice_data[f,]
+}
 
-ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-dt_Rice <- train(x,y, trControl = ctrl, method = 'rpart')
-dt_Rice
 ```
+
+```{r}
+rice_rpart <- rpart(Class ~., data = train)
+```
+
+
+```{r}
+set.seed(2)
+rice_rpart_prediction <- predict(rice_rpart, test, type = 'class') 
+# gives the probability for each class
+head(rice_rpart_prediction)
+```
+
+```{r}
+confusionMatrix(rice_rpart_prediction, test$Class)
+```
+
+
 ```{r}
 #create another decision tree model using PCA to see if it improves the model
-set.seed(123)
+set.seed(2)
 
-ctrl <- trainControl(method = 'cv', number = 10, savePredictions = TRUE)
-dt_Rice2 <- train(x,y, method = 'rpart' , trControl = ctrl, preProcess=c("pca"))
-dt_Rice2
+pca <- prcomp(train[, 1:5], scale. = T, center = T)
+
+test.zspace <- predict(pca, newdata = test[, 1:5])
+pca.train.df <- as.data.frame(pca$x)
+pca.train.df$Class <- train[,6]
+
+pca.model <- rpart(Class ~., method = 'class', data = pca.train.df)
+
+pca.test.df <- as.data.frame(test.zspace)
+pca.test.df$Class <- test[, 6]
+pca.pred <- predict(pca.model, pca.test.df[, 1:5], type='class')
+
+confusionMatrix(pca.pred, test[, 6])
+```
+
+```{r}
+fancyRpartPlot(pca.model)
 ```
 
 
 ```{r}
-dt_Rice$pred
+#dt_CM <- confusionMatrix(dt_Rice)
+#dt_CM
+```
+
+```{r}
+#Sensitivity <- 38.9/(38.9+3.9)
+#Sensitivity
+#Specificity <- 53/(4.3+53)
+#Specificity
+#Prevalence <- (38.9+3.9)/(38.9+4.3+3.9+53)
+#Prevalence
+#PPV <- (Sensitivity*Prevalence)/((Sensitivity*Prevalence)+((1-Specificity)*(1-Prevalence)))
+#PPV
+#NPV <- (Sensitivity*(1-Prevalence))/(((1-Sensitivity)*Prevalence)+((Specificity)*(1-Prevalence)))
+#NPV
+```
+
+```{r}
+#dt_predictions <- predict(dt_Rice, New_Rice_data)
+#confusionMatrix(dt_predictions, New_Rice_data$Class)
 ```
 
 
 ```{r}
-fancyRpartPlot(dt_Rice$finalModel)
+#varImp(dt_Rice)
 ```
 
 ```{r}
-dt_CM <- confusionMatrix(dt_Rice)
-dt_CM
-```
-
-```{r}
-Sensitivity <- 38.9/(38.9+3.9)
-Sensitivity
-Specificity <- 53/(4.3+53)
-Specificity
-Prevalence <- (38.9+3.9)/(38.9+4.3+3.9+53)
-Prevalence
-PPV <- (Sensitivity*Prevalence)/((Sensitivity*Prevalence)+((1-Specificity)*(1-Prevalence)))
-PPV
-NPV <- (Sensitivity*(1-Prevalence))/(((1-Sensitivity)*Prevalence)+((Specificity)*(1-Prevalence)))
-NPV
-```
-
-```{r}
-dt_predictions <- predict(dt_Rice, New_Rice_data)
-confusionMatrix(dt_predictions, New_Rice_data$Class)
-```
-
-
-```{r}
-varImp(dt_Rice)
-```
-
-```{r}
-ggplot(varImp(dt_Rice))
+#ggplot(varImp(dt_Rice))
 ```
 
 

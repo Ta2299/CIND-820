@@ -3,6 +3,7 @@ title: "Logistic Regression"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
@@ -137,6 +138,58 @@ finalvars
 New_Rice_data <- subset(Rice_data, select = c(Perimeter, Minor_Axis_Length, Eccentricity, Convex_Area, Extent, Class))
 str(New_Rice_data)
 ```
+
+```{r}
+#implement k-fold cv and build the logistic regression model
+set.seed(2)
+
+fold <- createFolds(New_Rice_data$Class, k = 10)
+for (f in fold) {
+  train <- New_Rice_data[-f,]
+  test <- New_Rice_data[f,]
+}
+```
+
+```{r}
+set.seed(2)
+rice_lr <- train(Class ~ Perimeter + Minor_Axis_Length + Eccentricity + 
+                    Convex_Area + Extent, data = train, method = "glm", 
+                  family = binomial)
+summary(rice_lr)
+```
+```{r}
+set.seed(2)
+rice_lr_prediction <- predict(rice_lr, test, type = 'raw') 
+# gives the probability for each class
+head(rice_lr_prediction)
+```
+```{r}
+confusionMatrix(rice_lr_prediction, test$Class)
+```
+
+```{r}
+#create another lr model using PCA to see if it improves the accuracy
+#create another decision tree model using PCA to see if it improves the model
+set.seed(2)
+
+pca <- prcomp(train[, 1:5], scale. = T, center = T)
+
+test.zspace <- predict(pca, newdata = test[, 1:5])
+pca.train.df <- as.data.frame(pca$x)
+pca.train.df$Class <- train[,6]
+
+lr.pca.model <- train(Class ~., data = pca.train.df, method = "glm", 
+                  family = binomial)
+
+pca.test.df <- as.data.frame(test.zspace)
+pca.test.df$Class <- test[, 6]
+lr.pca.pred <- predict(lr.pca.model, pca.test.df[, 1:5], type='raw')
+
+summary(lr.pca.model)
+
+confusionMatrix(lr.pca.pred, test[, 6])
+```
+
 
 ```{r}
 #Perform K-fold Cross-Validation 
